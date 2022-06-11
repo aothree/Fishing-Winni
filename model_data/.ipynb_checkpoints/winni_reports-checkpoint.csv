@@ -22,7 +22,7 @@
 20,2015,2015-05-14,45.0,50.0,10,nw,no_weather_recorded,north of lockes,7:45,salmon,17.0,28.0,False,7:15,11:55,lockes,280.0,5,7,"[7, 9)"
 21,2015,2015-05-14,45.0,50.0,10,nw,no_weather_recorded,south of witches,8:45,salmon,20.0,38.0,False,7:15,11:55,witches,280.0,5,8,"[7, 9)"
 22,2015,2015-05-14,45.0,50.0,0,no_wind,no_weather_recorded,north of lockes,8:55,salmon,17.26222222222222,26.479166666666668,False,7:15,11:55,lockes,280.0,5,8,"[7, 9)"
-23,2015,2015-05-15,69.0,55.0,5,nw,no_weather_recorded,harilla bay,14:30,salmon,18.0,26.479166666666668,False,14:30,16:20,harilla bay,110.0,5,14,"[13, 15)"
+23,14:30,2015-05-15,69.0,55.0,5,nw,no_weather_recorded,harilla bay,14:30,salmon,18.0,26.479166666666668,False,14:30,16:20,harilla bay,110.0,5,14,"[13, 15)"
 24,2015,2015-05-15,69.0,55.0,5,nw,no_weather_recorded,little bear bay,16:20,salmon,18.0,26.479166666666668,False,14:30,16:20,little bear bay,110.0,5,16,"[15, 17)"
 25,2015,2015-05-16,53.0,57.0,5,nw,overcast,little bear bay,8:30,salmon,10.0,10.0,False,5:15,9:30,little bear bay,255.0,5,8,"[7, 9)"
 26,2015,2015-05-17,58.0,58.0,0,no_wind,no_weather_recorded,harilla bay,5:45,rainbow,15.0,2.0,False,5:20,10:15,harilla bay,295.0,5,5,"[5, 7)"
@@ -201,7 +201,7 @@
 199,2016,2016-07-12,62.0,71.8,8,sw,sunny,east of welch,8:35,smallmouth,10.0,25.0,False,7:45,10:45,welch,180.0,7,8,"[7, 9)"
 200,2016,2016-07-13,71.0,72.5,3,w,sunny,north of lockes,8:10,rainbow,10.0,29.0,False,7:45,10:30,lockes,165.0,7,8,"[7, 9)"
 201,2016,2016-07-15,72.0,73.4,8,sw,sunny,north of diamond,no_time_recorded,no_fish_caught,0.0,0.0,True,8:00,10:00,diamond,120.0,7,0,
-202,2016,2016-08-03,60.0,75.6,4,sw,sunny,north of lockes,no_time_recorded,no_fish_caught,0.0,0.0,True,7:40,10:15,lockes,155.0,8,0,
+202,7:40,2016-08-03,60.0,75.6,4,sw,sunny,north of lockes,no_time_recorded,no_fish_caught,0.0,0.0,True,7:40,10:15,lockes,155.0,8,0,
 203,2016,2016-08-08,60.0,75.3,8,w,sunny,north of lockes,7:50,salmon,18.0,20.0,False,7:00,10:10,lockes,190.0,8,7,"[7, 9)"
 204,2016,2016-08-08,60.0,75.3,8,w,sunny,north of lockes,9:30,salmon,19.0,22.0,False,7:00,10:10,lockes,190.0,8,9,"[9, 11)"
 205,2016,2016-08-10,66.0,76.2,4,nw,overcast,east of welch,7:50,rainbow,17.0,31.0,False,7:30,10:15,welch,165.0,8,7,"[7, 9)"
