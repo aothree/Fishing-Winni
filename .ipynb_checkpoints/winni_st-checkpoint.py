@@ -148,27 +148,40 @@ if history:
             color='black'
         )
         
-       # Grouped Bar Chart
-        chart = Chart(df).mark_bar().encode(
-       column=Column('Genre', 
-                     axis=Axis(axisWidth=1.0, offset=-8.0, orient='bottom'),
-                     scale=Scale(padding=4.0)),
-       x=X('Gender', axis=False),
-       y=Y('Rating', axis=Axis(grid=False)),
-       color=Color('Gender', scale=Scale(range=['#EA98D2', '#659CCA']))
-    ).configure_facet_cell(
-        strokeWidth=0.0,
-    )
+    #    # Grouped Bar Chart
+    #     chart = Chart(df).mark_bar().encode(
+    #    column=Column('Genre', 
+    #                  axis=Axis(axisWidth=1.0, offset=-8.0, orient='bottom'),
+    #                  scale=Scale(padding=4.0)),
+    #    x=X('Gender', axis=False),
+    #    y=Y('Rating', axis=Axis(grid=False)),
+    #    color=Color('Gender', scale=Scale(range=['#EA98D2', '#659CCA']))
+    # ).configure_facet_cell(
+    #     strokeWidth=0.0,
+    # )
 
-chart.display()
+        #chart.display()
 
         st.altair_chart(bc)
 
         # Display bar-chart table
         st.dataframe(df)
+        
+        pivoted = df.pivot('Type', 'Week', 'Value') 
+        pivoted
 
     except:
         pass
+
+    
+#----------------
+df_bar_chart = df.copy()
+df_bar_chart['Month'] = df_bar_chart['Month'].map({4: 'April', 5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September'})
+df_bar_chart.set_index('Month', inplace = True)
+
+fig = plt.bar(df_bar_chart, width = .4, height = 3, color='r')
+
+st.pyplot(fig)
 
 
 # ----------------------------------------------------------------------------
