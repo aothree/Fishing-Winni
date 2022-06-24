@@ -26,7 +26,7 @@ This project started just by using data from the past.  But to make the app more
 {SQL database description}
 
 * `How Does My Data Cluster?`
-This sections runs a K-Means Clustering model and displays various data visualizations to analyze the resulting clusters.
+This sections provides two different unsupervised machine learning options to the user.  They can use KMeans or DBScan clustering models which will divide the records into a number of groups, or 'clusters', such that the data points within each cluster are similar, and dissimilar from the data points in the other clusters.  Lastly, the user has the ability to further analyze these clusters by producing a scatter plot, selecting what will be on the X and Y axis' from a drop-down menu of available features.  
 
 ## Conclusion and Next Steps
 This app can provide valuable information that helps all Lake Winipesaukee fishers gain an edge.  Billy or anyone else who inputs data from a day fishing on the Lake will be making this app stronger and more useful.  
