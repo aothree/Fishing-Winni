@@ -13,13 +13,13 @@ This project was started with the hopes of leveraging Streamlit to display Billy
 Link to Streamlit app: [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/dancosta154/winnipesaukee_multiregression/main/winni_st.py)
 
 ## Summary
-After manually inputting the existing data, the data was cleaned and organized in a {Pandas DataFrame/ SQL?}.  A streamlit app was deployed that has three major sections:
+After manually inputting the existing data, the data was cleaned and organized in a {Pandas DataFrame/ SQL?}.  A streamlit app was deployed that has four major sections:
 
 * `Show Me My Fish`
 Displays all records from the dataframe, or the user can filter records based on Location, Weather Condition, Temperature, and Wind Speed.  Shows table of the data, provides buttons to download `.csv` files, and displays the filtered data in various data visualizations.  
 
 * `Where Should I Fish?`
-Takes the data from user inputs and based on these conditions, tells the user which location they should fish at.  This is determined by looking at "fish caught per day" for each location with the given weather conditions.  The highest "fish caught per day" is the app's recommendation.  Lastly, the user can click a button to run a Random Forest regression model that will give the user an estimated number of fish that they'll catch based on the user inputs for location and weather conditions
+Takes the data from user inputs and based on these conditions, tells the user which location they should fish at.  This is determined by looking at "fish caught per day" for each location with the given weather conditions.  The highest "fish caught per day" is the app's recommendation.  Lastly, with the click of a button the user can run a Random Forest regression model that will give the user an estimated number of fish that they'll catch based on all past records.
 
 * `Add Fish`
 This project started just by using data from the past.  But to make the app more useful and robust over time, we set up a SQL database that will take new records directly from user input on the app.
