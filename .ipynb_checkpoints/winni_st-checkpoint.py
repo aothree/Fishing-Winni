@@ -1,268 +1,429 @@
 import streamlit as st
+from streamlit_option_menu import option_menu
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from datetime import date
 import altair as alt
+import datetime
+from sklearn.cluster import KMeans, DBSCAN
+from sklearn.preprocessing import StandardScaler
+
+html_temp = """
+    <div style="background:#025246 ;padding:10px">
+    <h2 style="color:white;text-align:center;"> Winnipesaukee Fishing Reports </h2>
+    </div>
+    """
+st.markdown(html_temp, unsafe_allow_html = True)
+
+today = date.today()
+today
 
 url = 'https://github.com/dancosta154/Winnipesaukee_MultiRegression/blob/main/model_data/winni_reports.csv?raw=true'
 df = pd.read_csv(url,index_col=0)
 
-st.title("Winnipesaukee Fishing Reports")
-st.header("Helping Billy Catch Fish")
+def make_unique_list(col):
+    return col.unique()
 
-st.text('''This website shows you a breakdown of the fish you have caught, or not caught, \nsince 2015. Select an area of the lake, then select weather conditions to see \nhow that area of the lake has fished historically.''')
+# universal variables
+location = make_unique_list(df['location'])
+weather = [str(x) for x in df['weather'].unique() if x != 'no_weather_recorded']
+wind_directions = make_unique_list(df['wind_dir'])
+numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
 
-st.markdown("""---""")
-
-## Location
-# create list of all locations
-location = df['location'].unique()
-
-# create sidebar with location dropdown
+# create sidebar and sidebar options
 sidebar = st.sidebar
-history = sidebar.checkbox("I want to see all the fish I've caught")
 
-if history:
-    try:
-        location_selector = sidebar.selectbox(
-            "Select a Location",
-            location
-        )
+with sidebar:
+    selected = option_menu(
+        menu_title = 'Navigation',
+        options=['Home', 'Show Me My Fish', 'Where Should I Fish?', 'Add Fish', 'How Is My Data Clustered?'],
+        icons=['house','folder2-open','cloud-sun','journal-plus','grid-1x2'],
+        menu_icon='cast',
+        default_index=0,
+        styles={
+        "container": {"padding": "0"},
+        "icon": {"color": "black", "font-size": "15px"}, 
+        "nav-link": {"font-size": "15px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
+        "nav-link-selected": {"background-color": "#025246"}
+        }
+    )
 
-        # filter df to only records with the selected location 
-        df_location = df[df['location'] == location_selector]
+if selected == 'Home':
+    st.write("""Remember how you wrote down all of those entries into your book? Well here they are! 
+    If you want to see all of the fish you've caught by location or weather condition,
+    click on **"Show Me My Fish"**. \n\n Alternatively, if you'd like to know where to fish based on tomorrow's 
+    weather conditions, then click the **"Where Should I Fish?"**. \n\n Even cooler, as you catch fish, you can add them to this website and the data will be
+    reflective of your newly caught fish! Just click on **"Add Fish"** to access this part. \n\n Now, this website wouldn't be complete without some
+    modeling... so if you'd like to see how your data is clustered (think "dividing the population or data points into a number of groups such that data points in the same groups are
+    more similar to other data points in the same group and dissimilar to the data points in other groups"), then click on the **"How Does My Data Cluster?"**.""")
+if selected == 'Show Me My Fish':
+    st.text("""
+    This page shows you a history of all of the records from your notebook! Each record 
+    in the table is an entry from the notebook; however, that doesn't mean one entry per 
+    day... each fish is it's own entry as the data is different for that particular 
+    fish (fish type, length, depth caught, etc.) 
 
-        ## Weather
-        # get list of all weather conditions that have occurred in selected location
-        mylist = [str(x) for x in df_location['weather'].unique()]
-        weather = [x for x in mylist if x != 'nan']
-
-        # create sidebar with weather dropdown
-        weather_selector = sidebar.selectbox(
-            "Select a Weather Condition",
-            weather
-        )
-
-        # create slider with temperatures
-        temp = sidebar.slider('What is the temperature?', 35, 90, 70, 1)
-        temp_plus_minus = sidebar.slider("Plus or Minus Degrees", 0, 30, 30, 1)
-
-        # create slider with wind
-        wind = sidebar.slider('How windy is it?', 0, 20, 7, 2)
-        wind_plus_minus = sidebar.slider("Plus or Minus Windspeed MPH", 0, 30, 30, 1)
-
-        # filter df_location to only records with selected weather condition
-        df_weather = df_location[df['weather'] == weather_selector] 
-        # filter df_weather to a range of wind within selected plus_minus
-        df_wind = df_weather[df_weather['wind_speed_mph'].between(wind - wind_plus_minus, wind + wind_plus_minus)]
-        # filter df_wind to a range of temperatures within selected plus_minus
-        df_temp = df_wind[df_wind['air_temp_f'].between(temp - temp_plus_minus, temp + temp_plus_minus)]
-
-        ## Reporting
-        # reporting about selected location 
-        st.write(f"**Weather Conditions: {weather_selector.title()}, {temp}&deg;, {wind} mph winds** for **{location_selector.title()}**")
-        st.write(f'This location has **{df_temp.shape[0]} records** with these weather conditions')
-        st.write(f"Under these weather conditions, this location was last fished on **{df_temp['date'].max()}**")
-
-        st.dataframe(df_temp)
-        st.write(f'{len(df_temp)} records')
-
-        ## Download Button
-        # Download df to CSV
-        def convert_df(df):
-            return df.to_csv().encode('utf-8')
-
-        today = date.today() # used for naming csv
-
-        csv = convert_df(df_temp)
-
-        st.download_button(
-            'Click to download filtered table', 
-            csv,
-            f'winni_data_{location_selector}_{today}.csv',
-            'text/csv',
-            key='download-csv'
-        )
-
-        # Download df to CSV
-        csv = convert_df(df)
-
-        st.download_button(
-            'Click to download table with all records', 
-            csv,
-            f'winni_data_{today}.csv',
-            'text/csv',
-            key='download-csv'
-        )
-
-        st.markdown("""---""")
-
-        ## Pie Chart and Table associated with chart
-        # creates and displays df based on user selections
-        x = df.loc[(df['location'] == location_selector) & (df['weather'] == weather_selector) & (df['wind_speed_mph'].between(wind - wind_plus_minus, wind + wind_plus_minus)) & (df['air_temp_f'].between(temp - temp_plus_minus, temp + temp_plus_minus))].value_counts(['fish_type'], normalize=True).to_frame()
-        x.rename(columns = {0: 'Percent_Caught'}, inplace = True)
-        x.reset_index(inplace = True)
-        x['fish_type'] = x['fish_type'].map(lambda x: x.title())
-        x.set_index('fish_type', inplace = True)
-
-        st.subheader('This graph provides a breakdown of fish caught by location')
-
-        # creates pie-chart based on user selections
-        fig, ax = plt.subplots()
-        ax.pie(x['Percent_Caught'], 
-               labels=x.index, 
-               autopct='%1.1f%%',
-               textprops = {'size': 'small'},
-               wedgeprops={'linewidth': 3.0, 'edgecolor': 'white'})
-        plt.title(f'Fish Caught - {location_selector.title()} \n {weather_selector.title()} Weather Conditions')
-        st.pyplot(fig)
-
-        # Display pie-chart table
-        st.dataframe(x)
-
-
-        ## Bar Chart and Table associated with chart
-        # creates bar-chart based on user selections
-        y = df.loc[(df['location'] == location_selector) & (df['weather'] == weather_selector) & (df['wind_speed_mph'].between(wind - wind_plus_minus, wind + wind_plus_minus)) & (df['air_temp_f'].between(temp - temp_plus_minus, temp + temp_plus_minus))].groupby('month').sum()['skunked']
-        z = df.loc[(df['location'] == location_selector) & (df['weather'] == weather_selector) & (df['wind_speed_mph'].between(wind - wind_plus_minus, wind + wind_plus_minus)) & (df['air_temp_f'].between(temp - temp_plus_minus, temp + temp_plus_minus))].groupby('month').count()['date']
-        y = y.reset_index()
-        z = z.reset_index()
-        df = pd.merge(y, z, on = 'month')
-        df.rename(columns={'month': 'Month', 'skunked': 'Skunked', 'date': 'Times Fished'}, inplace = True)
-
-        # Bar Chart
-        bc = alt.Chart(df).mark_bar(
-            size=50
-        ).encode(
-            x=alt.X("Month", axis=alt.Axis(tickCount=y.shape[0], grid=False)),
-            y="Skunked"
-        ).properties(
-            title='Skunked by Month',
-            width=500,
-            height=500
-        ).configure_title(
-            fontSize=40,
-            # font='Courier',
-            anchor='start',
-            color='black'
-        )
-        
-    #    # Grouped Bar Chart
-    #     chart = Chart(df).mark_bar().encode(
-    #    column=Column('Genre', 
-    #                  axis=Axis(axisWidth=1.0, offset=-8.0, orient='bottom'),
-    #                  scale=Scale(padding=4.0)),
-    #    x=X('Gender', axis=False),
-    #    y=Y('Rating', axis=Axis(grid=False)),
-    #    color=Color('Gender', scale=Scale(range=['#EA98D2', '#659CCA']))
-    # ).configure_facet_cell(
-    #     strokeWidth=0.0,
-    # )
-
-        #chart.display()
-
-        st.altair_chart(bc)
-
-        # Display bar-chart table
-        st.dataframe(df)
-        
-        pivoted = df.pivot('Type', 'Week', 'Value') 
-        pivoted
-
-    except:
-        pass
-
+    Filtering the selections on the left will shrink the table and graphs below to only 
+    records that match the selections you choose. Have fun!
+    """)
     
-#----------------
-df_bar_chart = df.copy()
-df_bar_chart['Month'] = df_bar_chart['Month'].map({4: 'April', 5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September'})
-df_bar_chart.set_index('Month', inplace = True)
-
-fig = plt.bar(df_bar_chart, width = .4, height = 3, color='r')
-
-st.pyplot(fig)
-
-
-# ----------------------------------------------------------------------------
-# Where to Fish
-where_to_fish = sidebar.checkbox("I don't know where to fish...")
-
-if where_to_fish:   
+    location = make_unique_list(df['location'])
     
-        ## Weather
-        # get list of all weather conditions that have occurred in selected location
-        ml = [str(x) for x in df['weather'].unique()]
-        weather_types = [x for x in ml if x != 'nan']
+    location_selector = sidebar.selectbox(
+        "Select a Location",
+        np.sort(location)
+    )
 
-        # create sidebar with weather dropdown
-        weather_condition = sidebar.selectbox(
-            "Select a Weather Condition",
-            weather_types
+    # filter df to only records with the selected location 
+    df_location = df[df['location'] == location_selector]
+
+    # get list of all weather conditions that have occurred in selected location
+    weather = np.sort([str(x) for x in df_location['weather'].unique() if x != 'no_weather_recorded'])[::-1]
+
+    weather_selector = sidebar.selectbox(
+        "Select a Weather Condition",
+        weather
+    )
+
+    # temperature sliders
+    temp = sidebar.slider('Select a Temperature', 35, 90, 70, 1)
+    temp_plus_minus = sidebar.slider("Plus or Minus Degrees", 0, 30, 30, 1)
+
+    # wind sliders
+    wind = sidebar.slider('Select a Wind Speed', 0, 20, 7, 1)
+    wind_plus_minus = sidebar.slider("Plus or Minus Windspeed MPH", 0, 30, 30, 1)
+
+    df_weather = df_location[(df_location['weather'] == weather_selector) & (df_location['wind_speed_mph'].between(wind - wind_plus_minus, wind + wind_plus_minus)) & (df_location['air_temp_f'].between(temp - temp_plus_minus, temp + temp_plus_minus))] 
+
+    # Reporting about selected location 
+    st.write(f"**Weather Conditions: {weather_selector.title()}, {temp}&deg;, {wind} mph winds** for **{location_selector.title()}**")
+    if df_weather.shape[0] > 1:
+        st.write(f'This location has **{df_weather.shape[0]} records** with these weather conditions')
+    else:
+        st.write(f'This location has **{df_weather.shape[0]} record** with these weather conditions')
+    st.write(f"Under these weather conditions, this location was last fished on **{df_weather['date'].max()}**")
+
+    st.dataframe(df_weather)
+    st.write(f'{len(df_weather)} records')
+    
+    # Download dfs to CSV
+    def convert_df(df):
+        return df.to_csv().encode('utf-8')
+
+    csv = convert_df(df_weather)
+
+    st.download_button(
+        'Click to download filtered table', 
+        csv,
+        f'winni_data_{location_selector}_{today}.csv',
+        'text/csv',
+        key='download-csv'
+    )
+
+    csv = convert_df(df)
+
+    st.download_button(
+        'Click to download table with all records', 
+        csv,
+        f'winni_data_{today}.csv',
+        'text/csv',
+        key='download-csv'
+    )
+
+    st.markdown("""---""")
+
+    # Pie Chart and Table associated with chart
+    pie = df_weather.value_counts(['fish_type'], normalize=True).to_frame()
+    pie.rename(columns = {0: 'Percent_Caught'}, inplace = True)
+    pie.reset_index(inplace = True)
+    pie['fish_type'] = pie['fish_type'].map(lambda x: x.title())
+    pie.set_index('fish_type', inplace = True)
+    
+    # creates pie-chart based on user selections
+    fig, ax = plt.subplots()
+    ax.pie(pie['Percent_Caught'], 
+           labels=pie.index, 
+           autopct='%1.1f%%',
+           textprops = {'size': 'small'},
+           wedgeprops={'linewidth': 3.0, 'edgecolor': 'white'})
+    plt.title(f'Fish Caught {location_selector.title()}: \n {weather_selector.title()} Weather Conditions', fontdict={'fontsize': 8})
+    st.pyplot(fig)
+
+    # Display pie-chart table
+    st.dataframe(pie)
+
+    st.markdown("""---""") 
+
+    ## Bar Chart and Table associated with chart
+    # creates bar-chart based on user selections
+    a = df_weather.groupby('month').sum()['skunked'].reset_index()
+    b = df_weather.groupby('month').count()['date'].reset_index()
+    chart = pd.merge(b, a, on = 'month')
+    chart.rename(columns={'month': 'Month', 'skunked': 'Skunked', 'date': 'Times Fished'}, inplace = True)
+    chart_month = chart.copy()
+    chart_month['Month'] = chart_month['Month'].map({4: 'April', 5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September'})
+
+    st.markdown("<h6 style='text-align: center; color: black;'>Times Fished vs. Times Skunked</h6>", unsafe_allow_html=True)
+    st.bar_chart(chart_month.set_index('Month'), width=0, height=0, use_container_width=True)
+
+    # Display bar-chart table
+    st.dataframe(chart_month)
+    
+if selected == 'Where Should I Fish?':
+    st.text("""
+    This page helps to show you where to fish based on the weather conditions you 
+    select. It will filter the table and graphs to show you those records that match 
+    where you have fished previously under the selected conditions, and the graphs will 
+    show you where the best places have been with these weather conditions.
+    """)
+
+    # create sidebar with weather dropdown
+    weather_condition = sidebar.selectbox(
+        "Select a Weather Condition",
+        weather
+    )
+
+    # create dropdown with wind direction
+    wind_dir_selector = sidebar.selectbox(
+        'Select a Wind Direction',
+        wind_directions
+    )
+
+    # temperature sliders
+    temp = sidebar.slider('Select a Temperature', 35, 90, 70, 1)
+    temp_plus_minus = sidebar.slider("Plus or Minus Degrees", 0, 30, 30, 1)
+
+    # wind sliders
+    wind = sidebar.slider('Select a Wind Speed', 0, 20, 7, 1)
+    wind_plus_minus = sidebar.slider("Plus or Minus Windspeed MPH", 0, 30, 30, 1)
+
+    df_weather = df.loc[(df['weather'] == weather_condition) & (df['wind_speed_mph'].between(wind - wind_plus_minus, wind + wind_plus_minus)) & (df['air_temp_f'].between(temp - temp_plus_minus, temp + temp_plus_minus)) & (df['wind_dir'] == wind_dir_selector)]
+
+    st.dataframe(df_weather)
+    st.write(f'{len(df_weather)} records')
+
+    # Distribution of Locations Fished    
+    days_fished = df_weather.groupby(['location', 'date']).count().groupby('location').count()['month'].sort_values(ascending=False).to_frame().rename(columns={"month":"# of Days Fished"}).reset_index()
+       
+    days_fished_bc = alt.Chart(days_fished).mark_bar(size=40).encode(
+        x=alt.X('location', sort='-y', axis=alt.Axis(labelAngle=-45)),
+        y=alt.Y('# of Days Fished', axis=alt.Axis(tickMinStep=1)),
+    ).properties(
+        title = 'Days Fished by Location',
+        width=800,
+        height=600
+    ).configure_title(
+        fontSize=15,
+        color='black'
+    )
+
+    st.altair_chart(days_fished_bc)
+
+    # Bar Chart - Fish Caught by Location
+    fish_caught = df_weather.loc[(df['fish_type'] != 'no_fish_caught')].groupby('location')['fish_type'].count().sort_values(ascending=False).to_frame().rename(columns={"fish_type":"# of Fish Caught"}).reset_index()
+    # fish_caught.rename(columns={"fish_type":"# of Fish Caught"})
+
+    bar_chart = alt.Chart(fish_caught).mark_bar(size=40).encode(
+        x=alt.X('location', sort='-y', axis=alt.Axis(labelAngle=-45)),
+        y=alt.Y('# of Fish Caught', axis=alt.Axis(tickMinStep=1)),
+    ).properties(
+        title = 'Fish Caught by Location',
+        width=800,
+        height=600
+    ).configure_title(
+        fontSize=15,
+        color='black'
+    )
+
+    st.altair_chart(bar_chart)
+    st.write(fish_caught.head(10))
+    
+if selected == 'Add Fish':
+    
+    def main():
+        st.write("This section allows for you to add the fish you have caught, one fish at a time. Adding records where no fish were caught is equally important to this dataset!")
+        
+        with st.form(key='myform', clear_on_submit=True):
+            day = st.date_input("What is the date you fished?",datetime.date(2022, 6, 22))
+            location_selector = st.selectbox("Where did you fish?", np.sort(location))
+            fish_type = st.selectbox('What type of fish?', ('Salmon', 'Rainbow', 'Lake Trout', 'Horned Pout', 'Smallmouth', 'No Fish Caught'))
+            fish_length = st.number_input('Length of Fish')
+            weather_condition = st.selectbox("Select a Weather Condition", weather)
+            temperature = st.number_input('Air Temp (F)')
+            water_temperature = st.number_input('Water Temp (F)')
+            wind_dir_selector = st.selectbox('Select a Wind Direction', wind_directions)
+            wind_speed = st.number_input('Wind Speed (MPH)')
+            submit_button = st.form_submit_button("Submit")
+  
+        if submit_button:
+            st.info('Record Submitted')
+            if fish_type == 'No Fish Caught':
+                result = f'''You unfortunately didn't catch a fish on {day} at {location_selector.title()}. Let's blame these **Weather conditions:** {weather_condition.title()}, {temperature}&deg;. {wind_dir_selector.upper()} winds blowing {wind_speed} mph.'''
+            else:
+                result = f'''You caught a {fish_length} inch {fish_type} on {day} at {location_selector.title()}.**Weather conditions:** {weather_condition.title()}, {temperature}&deg;. {wind_dir_selector.upper()} winds blowing {wind_speed} mph.'''
+            st.write(result)
+       
+    if __name__ == '__main__':
+        main()
+    
+    
+if selected == 'How Is My Data Clustered?':
+        
+    cluster_type = st.selectbox(
+        "Select Which Model to Cluster",
+        ('KMeans', 'DBScan')
+    )  
+     
+    if cluster_type == 'KMeans':
+        
+        # Dummy columns
+        df_dummies = pd.get_dummies(df, columns = ['wind_dir', 'weather', 'general_loc', 'fish_type'], drop_first = True)
+
+        # Define X
+        X = df_dummies.drop(columns = ['date','fish_length_in', 'time_caught', 'lines_in', 'lines_out', 'location', 'time_caught_bucket'])
+
+        # Standard Scalar
+        sc = StandardScaler()
+        X_scaled = sc.fit_transform(X)
+        
+        num_clusters = st.slider('How Many Clusters?', 2, 5, 3, 1)
+        
+        numeric_col1 = st.selectbox(
+        "Select Field 1 to Analyze",
+        numeric_cols,
+        index=numeric_cols.index('air_temp_f')
+        )
+    
+        numeric_col2 = st.selectbox(
+        "Select Field 2 to Analyze",
+        [i for i in numeric_cols if i != numeric_col1],
+        index=[i for i in numeric_cols if i != numeric_col1].index('fish_length_in')
         )
 
-        # create slider with temperatures
-        temperature = sidebar.slider('What is the temperature?', 35, 90, 70, 1)
-        temperature_plus_minus = sidebar.slider("Plus or Minus Degrees", 0, 30, 30, 1)
+        def run_kmeans(df, n_clusters=3):            
+                   
+            kmeans = KMeans(n_clusters, random_state=0).fit(X_scaled)
 
-        # create slider with wind
-        wind_speed = sidebar.slider('How windy is it?', 0, 20, 7, 2)
-        wind_speed_plus_minus = sidebar.slider("Plus or Minus Windspeed MPH", 0, 30, 30, 1)
+            df['cluster'] = kmeans.labels_ + 1
 
-        df_where = df.loc[(df['weather'] == weather_condition) & (df['wind_speed_mph'].between(wind_speed - wind_speed_plus_minus, wind_speed + wind_speed_plus_minus)) & (df['air_temp_f'].between(temperature - temperature_plus_minus, temperature + temperature_plus_minus))]
+            fig, ax = plt.subplots(figsize=(16, 9))
+
+            ax.grid(False)
+            ax.set_facecolor("#FFF")
+            ax.spines[["left", "bottom"]].set_visible(True)
+            ax.spines[["left", "bottom"]].set_color("#4a4a4a")
+            ax.tick_params(labelcolor="#4a4a4a")
+            ax.yaxis.label.set(color="#4a4a4a", fontsize=25)
+            ax.xaxis.label.set(color="#4a4a4a", fontsize=25)
+            # --------------------------------------------------
+
+            # Create scatterplot
+            ax = sns.scatterplot(
+                ax=ax,
+                x=df[numeric_col1],
+                y=df[numeric_col2],
+                hue=df['cluster'],
+                s=100,
+                palette=sns.color_palette("colorblind", n_colors=n_clusters),
+                legend=True
+            )
+            plt.legend(
+                title='Cluster',
+                loc='right',
+                bbox_to_anchor=(1.12, .9),
+                title_fontsize=19,
+                fontsize=15
+            )
+
+            # Annotate cluster centroids
+            # for ix, [water_temp_f, month] in enumerate(kmeans.cluster_centers_):
+            #     ax.scatter(water_temp_f, month, s=200, c="#a8323e")
+            #     ax.annotate(
+            #         f"Cluster #{ix+1}",
+            #         (water_temp_f, month),
+            #         fontsize=25,
+            #         color="#a8323e",
+            #         xytext=(water_temp_f + 5, month + 3),
+            #         bbox=dict(boxstyle="square, pad=0.2", fc="white", ec="#a8323e", lw=1),
+            #         ha="center",
+            #         va="center",
+            #     )
+
+            return fig
+
+        st.write(run_kmeans(df, n_clusters=num_clusters))
+
+        st.write('Averages by KMeans Cluster')
+        cluster_df = df.groupby('cluster').mean().T
+        st.dataframe(cluster_df)
+
+    elif cluster_type == 'DBScan':
         
-        st.dataframe(df_where)
-        st.write(f'{len(df_where)} records')
+        # Dummy columns
+        df_dummies = pd.get_dummies(df, columns = ['wind_dir', 'weather', 'general_loc', 'fish_type'], drop_first = True)
+
+        # Define X
+        X = df_dummies.drop(columns = ['date','fish_length_in', 'time_caught', 'lines_in', 'lines_out', 'location', 'time_caught_bucket'])
         
-        hist = alt.Chart(df_where).mark_bar(
-            size=30
-        ).encode(
-            alt.X("location", bin=False),
-            y='count()'
-        ).properties(
-            title='Most Fished Places',
-            width=800,
-            height=500
-        ).configure_title(
-            fontSize=40,
-            # font='Courier',
-            anchor='start',
-            color='black'
+        # Standard Scalar
+        sc = StandardScaler()
+        X_scaled = sc.fit_transform(X)
+        
+        
+        numeric_col1 = st.selectbox(
+            "Select Field 1 to Analyze",
+            numeric_cols,
+            index=numeric_cols.index('air_temp_f')
+        )
+
+        numeric_col2 = st.selectbox(
+            "Select Field 2 to Analyze",
+            [i for i in numeric_cols if i != numeric_col1],
+            index=[i for i in numeric_cols if i != numeric_col1].index('fish_length_in')
         )
         
-        st.altair_chart(hist)
-# ----------------------------------------------------------------------------
-# Model
-model = sidebar.button('Will I Catch a Fish?!?')
+        def run_dbscan(df):
+            dbscan = DBSCAN(eps = .5).fit(X_scaled)
 
-# if model():
-    ## Put model here
+            df['cluster'] = dbscan.labels_ + 1
+            
+            n_clusters = df['cluster'].nunique()
 
-    
-    
+            fig, ax = plt.subplots(figsize=(16, 9))
 
-## Database
-# import streamlit as st
-# import psycopg2
+            ax.grid(False)
+            ax.set_facecolor("#FFF")
+            ax.spines[["left", "bottom"]].set_visible(True)
+            ax.spines[["left", "bottom"]].set_color("#4a4a4a")
+            ax.tick_params(labelcolor="#4a4a4a")
+            ax.yaxis.label.set(color="#4a4a4a", fontsize=25)
+            ax.xaxis.label.set(color="#4a4a4a", fontsize=25)
+            # --------------------------------------------------
 
-# # Initialize connection.
-# # Uses st.experimental_singleton to only run once.
-# @st.experimental_singleton
-# def init_connection():
-#     return psycopg2.connect(**st.secrets["postgres"])
+            # Create scatterplot
+            ax = sns.scatterplot(
+                ax=ax,
+                x=df[numeric_col1],
+                y=df[numeric_col2],
+                hue=df['cluster'],
+                s=100,
+                palette=sns.color_palette("colorblind", n_colors=n_clusters),
+                legend=True
+            )
+            plt.legend(
+                title='Cluster',
+                loc='right',
+                bbox_to_anchor=(1.12, .9),
+                title_fontsize=19,
+                fontsize=15
+            )
 
-# conn = init_connection()
+            return fig
 
-# # Perform query.
-# # Uses st.experimental_memo to only rerun when the query changes or after 10 min.
-# @st.experimental_memo(ttl=600)
-# def run_query(query):
-#     with conn.cursor() as cur:
-#         cur.execute(query)
-#         return cur.fetchall()
+        st.write(run_dbscan(df))
 
-# rows = run_query("SELECT * from mytable;")
-
-# # Print results.
-# for row in rows:
-#     st.write(f"{row[0]} has a :{row[1]}:")
+        st.write('Averages by DBSCAN Cluster')
+        cluster_df = df.groupby('cluster').mean().T
+        st.dataframe(cluster_df)

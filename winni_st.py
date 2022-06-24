@@ -7,6 +7,8 @@ import seaborn as sns
 from datetime import date
 import altair as alt
 import datetime
+from sklearn.cluster import KMeans, DBSCAN
+from sklearn.preprocessing import StandardScaler
 
 html_temp = """
     <div style="background:#025246 ;padding:10px">
@@ -24,10 +26,11 @@ df = pd.read_csv(url,index_col=0)
 def make_unique_list(col):
     return col.unique()
 
-# # universal variables
+# universal variables
 location = make_unique_list(df['location'])
 weather = [str(x) for x in df['weather'].unique() if x != 'no_weather_recorded']
 wind_directions = make_unique_list(df['wind_dir'])
+numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
 
 # create sidebar and sidebar options
 sidebar = st.sidebar
@@ -35,7 +38,7 @@ sidebar = st.sidebar
 with sidebar:
     selected = option_menu(
         menu_title = 'Navigation',
-        options=['Home', 'Show Me My Fish', 'Where Should I Fish?', 'Add Fish', 'How Does My Data Cluster?'],
+        options=['Home', 'Show Me My Fish', 'Where Should I Fish?', 'Add Fish', 'How Is My Data Clustered?'],
         icons=['house','folder2-open','cloud-sun','journal-plus','grid-1x2'],
         menu_icon='cast',
         default_index=0,
@@ -50,11 +53,11 @@ with sidebar:
 if selected == 'Home':
     st.write("""Remember how you wrote down all of those entries into your book? Well here they are! 
     If you want to see all of the fish you've caught by location or weather condition,
-    click on the **"I want to see all the fish I've caught"** checkbox. \n\n Alternatively, if you'd like to know where to fish based on tomorrow's 
-    weather conditions, then click the **"I don't know where to fish"** checkbox. \n\n Even cooler, as you catch fish, you can add them to this website and the data will be
-    reflective of your newly caught fish! Just click on the **"Add fish that I've caught"** checkbox to access this part. \n\n Now, this website wouldn't be complete without some
+    click on **"Show Me My Fish"**. \n\n Alternatively, if you'd like to know where to fish based on tomorrow's 
+    weather conditions, then click the **"Where Should I Fish?"**. \n\n Even cooler, as you catch fish, you can add them to this website and the data will be
+    reflective of your newly caught fish! Just click on **"Add Fish"** to access this part. \n\n Now, this website wouldn't be complete without some
     modeling... so if you'd like to see how your data is clustered (think "dividing the population or data points into a number of groups such that data points in the same groups are
-    more similar to other data points in the same group and dissimilar to the data points in other groups"), then click on the **"How does this data cluster?"** checkbox.""")
+    more similar to other data points in the same group and dissimilar to the data points in other groups"), then click on the **"How Does My Data Cluster?"**.""")
 if selected == 'Show Me My Fish':
     st.text("""
     This page shows you a history of all of the records from your notebook! Each record 
@@ -89,7 +92,7 @@ if selected == 'Show Me My Fish':
     temp_plus_minus = sidebar.slider("Plus or Minus Degrees", 0, 30, 30, 1)
 
     # wind sliders
-    wind = sidebar.slider('Select a Wind Speed', 0, 20, 7, 2)
+    wind = sidebar.slider('Select a Wind Speed', 0, 20, 7, 1)
     wind_plus_minus = sidebar.slider("Plus or Minus Windspeed MPH", 0, 30, 30, 1)
 
     df_weather = df_location[(df_location['weather'] == weather_selector) & (df_location['wind_speed_mph'].between(wind - wind_plus_minus, wind + wind_plus_minus)) & (df_location['air_temp_f'].between(temp - temp_plus_minus, temp + temp_plus_minus))] 
@@ -238,52 +241,190 @@ if selected == 'Where Should I Fish?':
     st.write(fish_caught.head(10))
     
 if selected == 'Add Fish':
-    d = st.date_input(
-     "What is the date you fished?",
-     datetime.date(2022, 6, 22))
     
-    st.write('You caught these fish on:', d)
+    def main():
+        st.write("This section allows for you to add the fish you have caught, one fish at a time. Adding records where no fish were caught is equally important to this dataset!")
+        
+        with st.form(key='myform', clear_on_submit=True):
+            day = st.date_input("What is the date you fished?",datetime.date(2022, 6, 22))
+            location_selector = st.selectbox("Where did you fish?", np.sort(location))
+            fish_type = st.selectbox('What type of fish?', ('Salmon', 'Rainbow', 'Lake Trout', 'Horned Pout', 'Smallmouth', 'No Fish Caught'))
+            fish_length = st.number_input('Length of Fish')
+            weather_condition = st.selectbox("Select a Weather Condition", weather)
+            temperature = st.number_input('Air Temp (F)')
+            water_temperature = st.number_input('Water Temp (F)')
+            wind_dir_selector = st.selectbox('Select a Wind Direction', wind_directions)
+            wind_speed = st.number_input('Wind Speed (MPH)')
+            submit_button = st.form_submit_button("Submit")
+  
+        if submit_button:
+            st.info('Record Submitted')
+            if fish_type == 'No Fish Caught':
+                result = f'''You unfortunately didn't catch a fish on {day} at {location_selector.title()}. Let's blame these **Weather conditions:** {weather_condition.title()}, {temperature}&deg;. {wind_dir_selector.upper()} winds blowing {wind_speed} mph.'''
+            else:
+                result = f'''You caught a {fish_length} inch {fish_type} on {day} at {location_selector.title()}.**Weather conditions:** {weather_condition.title()}, {temperature}&deg;. {wind_dir_selector.upper()} winds blowing {wind_speed} mph.'''
+            st.write(result)
+       
+    if __name__ == '__main__':
+        main()
     
-if selected == 'How Does My Data Cluster?':
-    st.write('Working on this section')
-
     
-# model = sidebar.button('Will I Catch a Fish?!?')
+if selected == 'How Is My Data Clustered?':
+        
+    cluster_type = st.selectbox(
+        "Select Which Model to Cluster",
+        ('KMeans', 'DBScan')
+    )  
+     
+    if cluster_type == 'KMeans':
+        
+        # Dummy columns
+        df_dummies = pd.get_dummies(df, columns = ['wind_dir', 'weather', 'general_loc', 'fish_type'], drop_first = True)
 
+        # Define X
+        X = df_dummies.drop(columns = ['date','fish_length_in', 'time_caught', 'lines_in', 'lines_out', 'location', 'time_caught_bucket'])
 
-# if model():
-
-#     st.text("""Clicking this button triggers a model to run, which calculates the 
-# probability of catching a fish based on the selections you have made. This model 
-# uses historic data to determine whether or not a fish is likely to be caught.
-
-# This is mostly for our nerdy selves to have some extra fun with this project!""")
-
+        # Standard Scalar
+        sc = StandardScaler()
+        X_scaled = sc.fit_transform(X)
+        
+        num_clusters = st.slider('How Many Clusters?', 2, 5, 3, 1)
+        
+        numeric_col1 = st.selectbox(
+        "Select Field 1 to Analyze",
+        numeric_cols,
+        index=numeric_cols.index('air_temp_f')
+        )
     
-# ----------------------------------------------------------------------------
-# Database 
+        numeric_col2 = st.selectbox(
+        "Select Field 2 to Analyze",
+        [i for i in numeric_cols if i != numeric_col1],
+        index=[i for i in numeric_cols if i != numeric_col1].index('fish_length_in')
+        )
 
-# import streamlit as st
-# import psycopg2
+        def run_kmeans(df, n_clusters=3):            
+                   
+            kmeans = KMeans(n_clusters, random_state=0).fit(X_scaled)
 
-# # Initialize connection.
-# # Uses st.experimental_singleton to only run once.
-# @st.experimental_singleton
-# def init_connection():
-#     return psycopg2.connect(**st.secrets["postgres"])
+            df['cluster'] = kmeans.labels_ + 1
 
-# conn = init_connection()
+            fig, ax = plt.subplots(figsize=(16, 9))
 
-# # Perform query.
-# # Uses st.experimental_memo to only rerun when the query changes or after 10 min.
-# @st.experimental_memo(ttl=600)
-# def run_query(query):
-#     with conn.cursor() as cur:
-#         cur.execute(query)
-#         return cur.fetchall()
+            ax.grid(False)
+            ax.set_facecolor("#FFF")
+            ax.spines[["left", "bottom"]].set_visible(True)
+            ax.spines[["left", "bottom"]].set_color("#4a4a4a")
+            ax.tick_params(labelcolor="#4a4a4a")
+            ax.yaxis.label.set(color="#4a4a4a", fontsize=25)
+            ax.xaxis.label.set(color="#4a4a4a", fontsize=25)
+            # --------------------------------------------------
 
-# rows = run_query("SELECT * from mytable;")
+            # Create scatterplot
+            ax = sns.scatterplot(
+                ax=ax,
+                x=df[numeric_col1],
+                y=df[numeric_col2],
+                hue=df['cluster'],
+                s=100,
+                palette=sns.color_palette("colorblind", n_colors=n_clusters),
+                legend=True
+            )
+            plt.legend(
+                title='Cluster',
+                loc='right',
+                bbox_to_anchor=(1.12, .9),
+                title_fontsize=19,
+                fontsize=15
+            )
 
-# # Print results.
-# for row in rows:
-#     st.write(f"{row[0]} has a :{row[1]}:")
+            # Annotate cluster centroids
+            # for ix, [water_temp_f, month] in enumerate(kmeans.cluster_centers_):
+            #     ax.scatter(water_temp_f, month, s=200, c="#a8323e")
+            #     ax.annotate(
+            #         f"Cluster #{ix+1}",
+            #         (water_temp_f, month),
+            #         fontsize=25,
+            #         color="#a8323e",
+            #         xytext=(water_temp_f + 5, month + 3),
+            #         bbox=dict(boxstyle="square, pad=0.2", fc="white", ec="#a8323e", lw=1),
+            #         ha="center",
+            #         va="center",
+            #     )
+
+            return fig
+
+        st.write(run_kmeans(df, n_clusters=num_clusters))
+
+        st.write('Averages by KMeans Cluster')
+        cluster_df = df.groupby('cluster').mean().T
+        st.dataframe(cluster_df)
+
+    elif cluster_type == 'DBScan':
+        
+        # Dummy columns
+        df_dummies = pd.get_dummies(df, columns = ['wind_dir', 'weather', 'general_loc', 'fish_type'], drop_first = True)
+
+        # Define X
+        X = df_dummies.drop(columns = ['date','fish_length_in', 'time_caught', 'lines_in', 'lines_out', 'location', 'time_caught_bucket'])
+        
+        # Standard Scalar
+        sc = StandardScaler()
+        X_scaled = sc.fit_transform(X)
+        
+        eps_select = st.slider('What value of Epsilon do you want to use?', .2, 2.0, .6, .2)
+        
+        numeric_col1 = st.selectbox(
+            "Select Field 1 to Analyze",
+            numeric_cols,
+            index=numeric_cols.index('air_temp_f')
+        )
+
+        numeric_col2 = st.selectbox(
+            "Select Field 2 to Analyze",
+            [i for i in numeric_cols if i != numeric_col1],
+            index=[i for i in numeric_cols if i != numeric_col1].index('fish_length_in')
+        )
+        
+        def run_dbscan(df):
+            dbscan = DBSCAN(eps = eps_select).fit(X_scaled)
+
+            df['cluster'] = dbscan.labels_ + 1            
+                      
+            n_clusters = df['cluster'].nunique()
+
+            fig, ax = plt.subplots(figsize=(16, 9))
+
+            ax.grid(False)
+            ax.set_facecolor("#FFF")
+            ax.spines[["left", "bottom"]].set_visible(True)
+            ax.spines[["left", "bottom"]].set_color("#4a4a4a")
+            ax.tick_params(labelcolor="#4a4a4a")
+            ax.yaxis.label.set(color="#4a4a4a", fontsize=25)
+            ax.xaxis.label.set(color="#4a4a4a", fontsize=25)
+            # --------------------------------------------------
+
+            # Create scatterplot
+            ax = sns.scatterplot(
+                ax=ax,
+                x=df[numeric_col1],
+                y=df[numeric_col2],
+                hue=df['cluster'],
+                s=100,
+                palette=sns.color_palette("colorblind", n_colors=n_clusters),
+                legend=True
+            )
+            plt.legend(
+                title='Cluster',
+                loc='right',
+                bbox_to_anchor=(1.12, .9),
+                title_fontsize=19,
+                fontsize=15
+            )
+
+            return fig
+
+        st.write(run_dbscan(df))
+
+        st.write('Averages by DBSCAN Cluster')
+        cluster_df = df.groupby('cluster').mean().T
+        st.dataframe(cluster_df)

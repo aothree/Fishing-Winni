@@ -6,7 +6,7 @@
 
 ## Introduction
 
-My friend's father Billy has fished on Lake Winipesaukee for over {insert # of yrs} years.  Each day he fished from {2015-2019} he diligently recorded statistics about where he fished, the weather conditions, and his ultimate results.  
+My friend's father Billy has fished on Lake Winipesaukee for over 40 years.  Each day he fished from 2015-2022 he diligently recorded statistics about where he fished, the weather conditions, and his ultimate results.  
 
 This project was started with the hopes of leveraging Streamlit to display Billy's data in an easily digestible dashboard, and give him an idea of where he may have the best success fishing on a given day.  Beyond that, the project aimed to allow the Streamlit application to take new data in to grow the data set over time, thus making the analysis and modeling more robust.  
 
