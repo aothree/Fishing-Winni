@@ -1,5 +1,9 @@
 # Fishing on Lake Winipesaukee
 
+<p align="center">
+  <img src="https://github.com/aothree/Fishing-Winni-Classification/blob/main/images/img_8002.jpg"/>
+</p>
+
 ## Introduction
 
 My friend's father Billy has fished on Lake Winipesaukee for over {insert # of yrs} years.  Each day he fished from {2015-2019} he diligently recorded statistics about where he fished, the weather conditions, and his ultimate results.  
