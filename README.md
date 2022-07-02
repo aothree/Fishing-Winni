@@ -10,7 +10,7 @@ My friend's father Billy has fished on Lake Winipesaukee for over 40 years.  Eac
 
 This project was started with the hopes of leveraging Streamlit to display Billy's data in an easily digestible dashboard, and give him an idea of where he may have the best success fishing on a given day.  Beyond that, the project aimed to allow the Streamlit application to take new data in to grow the data set over time, thus making the analysis and modeling more robust.  
 
-Link to Streamlit app: [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/dancosta154/winnipesaukee_multiregression/main/winni_st.py)
+Link to Streamlit app: [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://aothree-fishing-winni-classification-winni-st-bpmg9a.streamlitapp.com/)
 
 ## Summary
 After manually inputting the existing data, the data was cleaned and organized in a {Pandas DataFrame/ SQL?}.  A streamlit app was deployed that has four major sections:
