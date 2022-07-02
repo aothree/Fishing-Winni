@@ -9,6 +9,32 @@ import altair as alt
 import datetime
 from sklearn.cluster import KMeans, DBSCAN
 from sklearn.preprocessing import StandardScaler
+from google.cloud import storage
+from google.oauth2 import service_account
+
+# Create API client.
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"]
+)
+client = storage.Client(credentials=credentials)
+
+# Retrieve file contents.
+# Uses st.experimental_memo to only rerun when the query changes or after 10 min.
+@st.experimental_memo(ttl=600)
+
+def read_file(bucket_name, file_path):
+    bucket = client.bucket(bucket_name)
+    content = bucket.blob(file_path).download_as_string().decode("utf-8")
+    return content
+
+bucket_name = "winni-bucket"
+file_path = "winni_reports.csv"
+
+content = read_file(bucket_name, file_path)
+st.write(type(content))
+
+
+
 
 html_temp = """
     <div style="background:#025246 ;padding:10px">
@@ -371,6 +397,7 @@ if selected == 'How Is My Data Clustered?':
         sc = StandardScaler()
         X_scaled = sc.fit_transform(X)
         
+        eps_select = st.slider('What value of Epsilon do you want to use?', .2, 2.0, .6, .2)
         
         numeric_col1 = st.selectbox(
             "Select Field 1 to Analyze",
@@ -385,10 +412,10 @@ if selected == 'How Is My Data Clustered?':
         )
         
         def run_dbscan(df):
-            dbscan = DBSCAN(eps = .5).fit(X_scaled)
+            dbscan = DBSCAN(eps = eps_select).fit(X_scaled)
 
-            df['cluster'] = dbscan.labels_ + 1
-            
+            df['cluster'] = dbscan.labels_ + 1            
+                      
             n_clusters = df['cluster'].nunique()
 
             fig, ax = plt.subplots(figsize=(16, 9))
