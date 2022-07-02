@@ -11,27 +11,29 @@ from sklearn.cluster import KMeans, DBSCAN
 from sklearn.preprocessing import StandardScaler
 from google.cloud import storage
 from google.oauth2 import service_account
+import tableauserverclient as TSC
+import streamlit.components.v1 as components
 
-# Create API client.
-credentials = service_account.Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"]
-)
-client = storage.Client(credentials=credentials)
+# # Create API client.
+# credentials = service_account.Credentials.from_service_account_info(
+#     st.secrets["gcp_service_account"]
+# )
+# client = storage.Client(credentials=credentials)
 
-# Retrieve file contents.
-# Uses st.experimental_memo to only rerun when the query changes or after 10 min.
-@st.experimental_memo(ttl=600)
+# # Retrieve file contents.
+# # Uses st.experimental_memo to only rerun when the query changes or after 10 min.
+# @st.experimental_memo(ttl=600)
 
-def read_file(bucket_name, file_path):
-    bucket = client.bucket(bucket_name)
-    content = bucket.blob(file_path).download_as_string().decode("utf-8")
-    return content
+# def read_file(bucket_name, file_path):
+#     bucket = client.bucket(bucket_name)
+#     content = bucket.blob(file_path).download_as_string().decode("utf-8")
+#     return content
 
-bucket_name = "winni-bucket"
-file_path = "winni_reports.csv"
+# bucket_name = "winni-bucket"
+# file_path = "winni_reports.csv"
 
-content = read_file(bucket_name, file_path)
-st.write(type(content))
+# content = read_file(bucket_name, file_path)
+# st.write(type(content))
 
 
 
@@ -229,7 +231,20 @@ if selected == 'Where Should I Fish?':
 
     st.dataframe(df_weather)
     st.write(f'{len(df_weather)} records')
+    
+    st.markdown("""---""")
+    
+    st.write('Each fish represents a location.  Hover the mouse over a fish for more info!')
+    def main():
+        html_temp = "<div class='tableauPlaceholder' id='viz1656796414285' style='position: relative'><noscript><a href='#'><img alt='Fish Length vs Water Depth, by Location ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Wi&#47;WinniLake&#47;Sheet1&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='WinniLake&#47;Sheet1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Wi&#47;WinniLake&#47;Sheet1&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1656796414285');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>"
+        
+        components.html(html_temp, height = 800, width = 800)
+    
+    if __name__ == "__main__":    
+        main()
 
+    st.markdown("""---""")
+    
     # Distribution of Locations Fished    
     days_fished = df_weather.groupby(['location', 'date']).count().groupby('location').count()['month'].sort_values(ascending=False).to_frame().rename(columns={"month":"# of Days Fished"}).reset_index()
        
