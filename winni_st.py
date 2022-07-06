@@ -13,6 +13,7 @@ from google.cloud import storage
 from google.oauth2 import service_account
 import tableauserverclient as TSC
 import streamlit.components.v1 as components
+import io 
 
 # Create API client.
 credentials = service_account.Credentials.from_service_account_info(
@@ -22,7 +23,7 @@ client = storage.Client(credentials=credentials)
 
 # Retrieve file contents.
 # Uses st.experimental_memo to only rerun when the query changes or after 10 min.
-@st.experimental_memo(ttl=600)
+@st.experimental_memo(ttl=1)
 
 def read_file(bucket_name, file_path):
     bucket = client.bucket(bucket_name)
@@ -33,10 +34,13 @@ bucket_name = "lake-winni-bucket"
 file_path = "winni_reports.csv"
 
 content = read_file(bucket_name, file_path)
-st.write(type(content))
 
 
 
+df = pd.read_fwf(io.StringIO(content))
+
+result_df = io.StringIO(content)
+df= pd.read_csv(result_df, sep = ',', index_col = 0)
 
 html_temp = """
     <div style="background:#025246 ;padding:10px">
@@ -48,8 +52,6 @@ st.markdown(html_temp, unsafe_allow_html = True)
 today = date.today()
 today
 
-url = 'https://github.com/dancosta154/Winnipesaukee_MultiRegression/blob/main/model_data/winni_reports.csv?raw=true'
-df = pd.read_csv(url,index_col=0)
 
 def make_unique_list(col):
     return col.unique()
@@ -283,31 +285,47 @@ if selected == 'Where Should I Fish?':
     
 if selected == 'Add Fish':
     
+    
     def main():
         st.write("This section allows for you to add the fish you have caught, one fish at a time. Adding records where no fish were caught is equally important to this dataset!")
-        
+
         with st.form(key='myform', clear_on_submit=True):
             day = st.date_input("What is the date you fished?",datetime.date(2022, 6, 22))
             location_selector = st.selectbox("Where did you fish?", np.sort(location))
             fish_type = st.selectbox('What type of fish?', ('Salmon', 'Rainbow', 'Lake Trout', 'Horned Pout', 'Smallmouth', 'No Fish Caught'))
             fish_length = st.number_input('Length of Fish')
+            water_depth = st.number_input('Depth at which you caught the fish')
+            time_caught = st.time_input('What time did you catch the fish?', datetime.time(8, 45))
             weather_condition = st.selectbox("Select a Weather Condition", weather)
             temperature = st.number_input('Air Temp (F)')
             water_temperature = st.number_input('Water Temp (F)')
             wind_dir_selector = st.selectbox('Select a Wind Direction', wind_directions)
             wind_speed = st.number_input('Wind Speed (MPH)')
-            submit_button = st.form_submit_button("Submit")
-  
-        if submit_button:
-            st.info('Record Submitted')
-            if fish_type == 'No Fish Caught':
-                result = f'''You unfortunately didn't catch a fish on {day} at {location_selector.title()}. Let's blame these **Weather conditions:** {weather_condition.title()}, {temperature}&deg;. {wind_dir_selector.upper()} winds blowing {wind_speed} mph.'''
-            else:
-                result = f'''You caught a {fish_length} inch {fish_type} on {day} at {location_selector.title()}.**Weather conditions:** {weather_condition.title()}, {temperature}&deg;. {wind_dir_selector.upper()} winds blowing {wind_speed} mph.'''
-            st.write(result)
-       
+            
+            record = [str(day)[:4], day,location_selector, fish_type, fish_length, water_depth, time_caught, weather_condition, temperature, water_temperature, wind_dir_selector, wind_speed,0 ,0 ,0 ,0,0 ,0 ,0 ,0]
+            
+            if st.form_submit_button("Add Record"):
+                st.write(df.shape)
+                df.loc[len(df.index)] = record
+                
+                df.to_csv('updated_df.csv')
+
+                with open('updated_df.csv') as f:
+                    s = f.read() + '\n' # add trailing new line character
+               
+                st.write(f'new df shape is {df.shape}')
+                
+                # writing out new file to google cloud
+                client = storage.Client(credentials=credentials)
+                bucket = client.get_bucket(bucket_name)
+                blob = bucket.blob(file_path)
+                blob.upload_from_string(s)
+                
     if __name__ == '__main__':
         main()
+    
+    st.dataframe(df)
+    
     
     
 if selected == 'How Is My Data Clustered?':
