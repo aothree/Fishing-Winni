@@ -1,3 +1,0 @@
-# old dataframe serializer
-[global]
-dataFrameSerialization = "legacy"
