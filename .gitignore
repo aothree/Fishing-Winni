@@ -1,2 +1,5 @@
 # streamlit secrets.toml and config.toml
 .streamlit/
+
+# TOML
+*.toml
