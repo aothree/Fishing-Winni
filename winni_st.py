@@ -45,7 +45,7 @@ def read_file(bucket_name, file_path):
     content = bucket.blob(file_path).download_as_string().decode("utf-8")
     return content
 
-bucket_name = "winni-data-bucket"
+bucket_name = "lake-winni-bucket"
 file_path = "winni_reports.csv"
 
 content = read_file(bucket_name, file_path)
@@ -314,7 +314,7 @@ if selected == 'Add Fish':
                 weather_condition,
                 location_selector, 
                 time_caught,
-                fish_type, 
+                np.where(fish_type == 'No Fish Caught', 'no_fish_caught', fish_type.lower()), 
                 fish_length, 
                 water_depth, 
                 np.where(fish_type == "No Fish Caught", True, False), # skunked
