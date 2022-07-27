@@ -7,13 +7,10 @@ import seaborn as sns
 import altair as alt
 import tableauserverclient as TSC
 import streamlit.components.v1 as components
-
 from datetime import date
 import datetime
-
 from sklearn.cluster import KMeans, DBSCAN
 from sklearn.preprocessing import StandardScaler
-
 from io import StringIO
 import io
 from google.cloud import storage
@@ -203,7 +200,7 @@ if selected == 'Show Me My Fish':
         st.markdown("<h6 style='text-align: center; color: black;'>Times Fished vs. Times Skunked</h6>", unsafe_allow_html=True)
         st.bar_chart(chart_month.set_index('Month'), width=0, height=0, use_container_width=True)
 
-        # Display bar-chart table
+        # Display Bar-Chart table
         st.dataframe(chart_month)
     
     if __name__ == '__main__':
